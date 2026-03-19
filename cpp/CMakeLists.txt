@@ -27,6 +27,11 @@ pkg_check_modules(GST REQUIRED
     gstreamer-rtsp-server-1.0
 )
 
+# ---- iceoryx2 (zed-headless only) -------------------------------------------
+# Installed inside the Docker image; see docker/Dockerfile for build steps.
+# cmake package name differs from the GitHub repo name:
+find_package(iceoryx2-cxx 0.8.1 REQUIRED)
+
 # ---- Platform libs -----------------------------------------------------------
 if(NOT WIN32)
     add_definitions(-Wno-format-extra-args)
@@ -75,10 +80,10 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # ==============================================================================
-# Target 2: zed-headless  (headless streaming binary, C++14 compatible)
+# Target 2: zed-headless  (headless streaming binary, C++17)
 #
 # Features:
-#   --shm      POSIX shared memory output
+#   --shm      iceoryx2 publish-subscribe IPC (zero-copy, multi-subscriber)
 #   --rtsp     RTSP streaming via GStreamer gst-rtsp-server
 #   --record   File recording via OpenCV VideoWriter
 #
@@ -97,9 +102,8 @@ add_executable(zed-headless
     src/zed_headless.cpp
 )
 
-# C++14 is sufficient; the only C++17 feature we used was std::filesystem,
-# which has been replaced with a POSIX makedirs() helper.
-target_compile_options(zed-headless PRIVATE -std=c++14 -O3)
+# iceoryx2-cxx requires C++17.
+target_compile_options(zed-headless PRIVATE -std=c++17 -O3)
 
 target_include_directories(zed-headless PRIVATE
     ${CUDA_INCLUDE_DIRS}
@@ -116,4 +120,5 @@ target_link_libraries(zed-headless
     ${OpenCV_LIBRARIES}
     ${GST_LIBRARIES}
     ${SPECIAL_OS_LIBS}
+    iceoryx2-cxx::static-lib-cxx
 )
